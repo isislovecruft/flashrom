@@ -2,3 +2,6 @@
 *.d
 .features
 .libdeps
+flashrom
+flashrom.exe
+flashrom.8
