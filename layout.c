@@ -263,6 +263,16 @@ int build_new_image(const struct flashctx *flash, uint8_t *oldcontents, uint8_t 
 	romentry_t *entry;
 	unsigned int size = flash->chip->total_size * 1024;
 
+    if (use_ifd) {
+      romimages = MAX_ROMLAYOUT;
+      if (ifd_read_romlayout(oldcontents, newcontents, size, rom_entries, &romimages))
+        return 1;
+      /* Call process_include_args() late, as we only just got to know the
+         names of available images. */
+      if (process_include_args())
+        return 1;
+    }
+
 	/* If no regions were specified for inclusion, assume
 	 * that the user wants to write the complete new image.
 	 */

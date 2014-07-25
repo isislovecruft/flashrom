@@ -324,12 +324,22 @@ __attribute__((format(printf, 2, 3)));
 #define msg_cspew(...)	print(MSG_SPEW, __VA_ARGS__)	/* chip debug spew  */
 
 /* layout.c */
+typedef struct {
+    unsigned int start;
+    unsigned int end;
+    unsigned int included;
+    char name[256];
+} romlayout_t;
 int register_include_arg(char *name);
 int process_include_args(void);
 int read_romlayout(char *name);
 int normalize_romentries(const struct flashctx *flash);
 int build_new_image(const struct flashctx *flash, uint8_t *oldcontents, uint8_t *newcontents);
 void layout_cleanup(void);
+
+/* ifd.c */
+int ifd_read_romlayout(const uint8_t *oldcontents, const uint8_t *newcontents,
+                       unsigned flash_size, romlayout_t *entries, int *n_entries);
 
 /* spi.c */
 struct spi_command {

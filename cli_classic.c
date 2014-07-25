@@ -31,6 +31,13 @@
 #include "flashchips.h"
 #include "programmer.h"
 
+static int use_ifd = 0;
+
+void layout_use_ifd(void)
+{
+  use_ifd = 1;
+}
+
 static void cli_classic_usage(const char *name)
 {
 	printf("Please note that the command line interface for flashrom has changed between\n"
@@ -41,7 +48,7 @@ static void cli_classic_usage(const char *name)
 	       "-z|"
 #endif
 	       "-p <programmername>[:<parameters>] [-c <chipname>]\n"
-	       "[-E|(-r|-w|-v) <file>] [-l <layoutfile> [-i <imagename>]...] [-n] [-f]]\n"
+	       "[-E|(-r|-w|-v) <file>] [(-l <layoutfile>|-d) [-i <imagename>]...] [-n] [-f]]\n"
 	       "[-V[V[V]]] [-o <logfile>]\n\n", name);
 
 	printf(" -h | --help                        print this help text\n"
@@ -55,6 +62,7 @@ static void cli_classic_usage(const char *name)
 	       " -f | --force                       force specific operations (see man page)\n"
 	       " -n | --noverify                    don't auto-verify\n"
 	       " -l | --layout <layoutfile>         read ROM layout from <layoutfile>\n"
+           " -d | --ifd                         read layout from an Intel Firmware Descriptor\n"
 	       " -i | --image <name>                only flash image <name> from flash layout\n"
 	       " -o | --output <logfile>            log output to <logfile>\n"
 	       " -L | --list-supported              print supported devices\n"
@@ -98,7 +106,7 @@ int main(int argc, char *argv[])
 	struct flashctx *fill_flash;
 	const char *name;
 	int namelen, opt, i, j;
-	int startchip = -1, chipcount = 0, option_index = 0, force = 0;
+	int startchip = -1, chipcount = 0, option_index = 0, force = 0, ifd = 0;
 #if CONFIG_PRINT_WIKI == 1
 	int list_supported_wiki = 0;
 #endif
@@ -107,7 +115,7 @@ int main(int argc, char *argv[])
 	enum programmer prog = PROGRAMMER_INVALID;
 	int ret = 0;
 
-	static const char optstring[] = "r:Rw:v:nVEfc:l:i:p:Lzho:";
+	static const char optstring[] = "r:Rw:v:nVEfc:l:di:p:Lzho:";
 	static const struct option long_options[] = {
 		{"read",		1, NULL, 'r'},
 		{"write",		1, NULL, 'w'},
@@ -118,6 +126,7 @@ int main(int argc, char *argv[])
 		{"verbose",		0, NULL, 'V'},
 		{"force",		0, NULL, 'f'},
 		{"layout",		1, NULL, 'l'},
+        {"ifd",         0, NULL, 'd'},
 		{"image",		1, NULL, 'i'},
 		{"list-supported",	0, NULL, 'L'},
 		{"list-supported-wiki",	0, NULL, 'z'},
@@ -213,8 +222,22 @@ int main(int argc, char *argv[])
 					"more than once. Aborting.\n");
 				cli_classic_abort_usage();
 			}
+            if (ifd) {
+                fprintf(stderr, "Error: --layout and --ifd both specified. "
+                        "Aborting.\n");
+                cli_classic_abort_usage();
+            }
 			layoutfile = strdup(optarg);
 			break;
+        case 'd':
+            if (layoutfile) {
+                fprintf(stderr, "Error: --layout and --ifd both specified. "
+                        "Aborting.\n");
+                cli_classic_abort_usage();
+            }
+            layout_use_ifd();
+            ifd = 1;
+            break;
 		case 'i':
 			tempstr = strdup(optarg);
 			if (register_include_arg(tempstr)) {
@@ -376,7 +399,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (process_include_args()) {
+	if (!ifd && process_include_args()) {
 		ret = 1;
 		goto out;
 	}

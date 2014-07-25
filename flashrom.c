@@ -1923,6 +1923,11 @@ int doit(struct flashctx *flash, int force, const char *filename, int read_it,
 		goto out_nofree;
 	}
 
+    if (normalize_romentries(flash, oldcontents, newcontents)) {
+      ret = 1;
+      goto out_nofree;
+    }
+
 	/* Given the existence of read locks, we want to unlock for read,
 	 * erase and write.
 	 */
